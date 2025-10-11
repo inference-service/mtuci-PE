@@ -4,38 +4,79 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.datasets import make_classification
 from matplotlib.animation import FuncAnimation
 
+import json, sys
+from pathlib import Path
+
+DEFAULT_CONFIG = {
+    "dataset": {
+        "n_samples": 100,
+        "n_features": 2,
+        "n_redundant": 0,
+        "n_informative": 2,
+        "n_clusters_per_class": 1,
+        "class_sep": 1.0,
+        "flip_y": 0.1,
+        "random_state": 42
+    },
+    "classifier": {
+        "loss": "perceptron",
+        "learning_rate": "constant",
+        "eta0": 0.01,
+        "max_iter": 1,
+        "warm_start": True,
+        "tol": None,
+        "random_state": 42
+    },
+    "training": {
+        "epochs": 20,
+        "window": 5,
+        "delta": 1.0,
+        "early_stop": False
+    }
+}
+
+def load_config(path="config.json"):
+    """Load configuration from JSON, fallback to defaults on failure."""
+    path = Path(path)
+    if not path.exists():
+        print(f"[WARN] Config file '{path}' not found. Using defaults.")
+        return DEFAULT_CONFIG
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+            # Basic sanity check
+            for section in ("dataset", "classifier", "training"):
+                if section not in cfg:
+                    raise KeyError(f"Missing section '{section}' in config.")
+            return cfg
+    except (json.JSONDecodeError, KeyError, TypeError) as e:
+        print(f"[ERROR] Failed to load config: {e}")
+        print("[INFO] Falling back to defaults.")
+        return DEFAULT_CONFIG
+    except Exception as e:
+        print(f"[FATAL] Unexpected error while reading config: {e}")
+        sys.exit(1)
+
+
+cfg = load_config("params.json")
+print(f"Loaded config: epochs={cfg['training']['epochs']}, eta0={cfg['classifier']['eta0']}")
+
 # 1. Генерация датасета (сделаем задачу не слишком лёгкой)
-X, y = make_classification(
-    n_samples=100,
-    n_features=2,
-    n_redundant=0,
-    n_informative=2,
-    n_clusters_per_class=1,
-    class_sep=1.0,  # чем меньше значение, тем больше пересечение классов
-    flip_y=0.1,  # вероятность случайной ошибки в метке (шум)
-    random_state=42
-)
+X, y = make_classification(**cfg["dataset"])
 
 # 2. Инициализация классификатора, похожего на персептрон, но с управляемой скоростью обучения
-perceptron = SGDClassifier(
-    loss="perceptron",  # используем функцию потерь персептрона
-    learning_rate="constant",
-    eta0=0.01,  # скорость обучения (меньше = медленнее)
-    max_iter=1,  # обучаем только 1 эпоху за вызов .fit()
-    warm_start=True,  # сохраняем веса между вызовами .fit()
-    tol=None,
-    random_state=42
-)
+perceptron = SGDClassifier(**cfg["classifier"])
 
 # 3. Для анимации сохраняем границы решений и ошибки
 boundaries = []
 errors = []
-epochs = 20     # максимум эпох
+epochs = cfg["training"]["epochs"]     # максимум эпох
 
 # Усреднение ошибок для остановки
-window = 5      # сколько эпох смотрим назад
-delta = 1.0     # допустимое отклонение от среднего
-early_stop = False
+window = cfg["training"]["window"]     # сколько эпох смотрим назад
+delta = cfg["training"]["delta"]     # допустимое отклонение от среднего
+early_stop = cfg["training"]["early_stop"]
 
 for epoch in range(epochs):
     perceptron.fit(X, y)
