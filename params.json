@@ -1,0 +1,27 @@
+{
+  "dataset": {
+    "n_samples": 100,
+    "n_features": 2,
+    "n_redundant": 0,
+    "n_informative": 2,
+    "n_clusters_per_class": 1,
+    "class_sep": 1.0,
+    "flip_y": 0.1,
+    "random_state": 42
+  },
+  "classifier": {
+    "loss": "perceptron",
+    "learning_rate": "constant",
+    "eta0": 0.01,
+    "max_iter": 1,
+    "warm_start": true,
+    "tol": null,
+    "random_state": 42
+  },
+  "training": {
+    "epochs": 20,
+    "window": 5,
+    "delta": 1.0,
+    "early_stop": false
+  }
+}
