@@ -1,8 +1,13 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from sklearn.linear_model import SGDClassifier
 from sklearn.datasets import make_classification
 from matplotlib.animation import FuncAnimation
+
+import time
+
+matplotlib.use('QtAgg')
 
 import json, sys
 from pathlib import Path
@@ -32,6 +37,10 @@ DEFAULT_CONFIG = {
         "window": 5,
         "delta": 1.0,
         "early_stop": False
+    },
+    "animation": {
+        "repeat": True,
+        "interval": 700
     }
 }
 
@@ -78,6 +87,9 @@ window = cfg["training"]["window"]     # сколько эпох смотрим 
 delta = cfg["training"]["delta"]     # допустимое отклонение от среднего
 early_stop = cfg["training"]["early_stop"]
 
+start_time = time.time()
+epoch_time = time.time()
+
 for epoch in range(epochs):
     perceptron.fit(X, y)
     y_pred = perceptron.predict(X)
@@ -90,12 +102,17 @@ for epoch in range(epochs):
     y_points = -(w[0] * x_points + b) / (w[1] + 1e-6)
     boundaries.append((x_points, y_points))
 
+    print(f"Epoch {epoch}, error {errors[-1]}, epoch time {(time.time() - start_time)*1000} ms")
+    epoch_time = time.time()
+
     # Ранняя остановка
     if len(errors) > window and early_stop:
         recent_mean = np.mean(errors[-window:-1])
         if abs(errors[-1] - recent_mean) <= delta:
             print(f"Остановка на эпохе {epoch + 1}: ошибка стабилизировалась")
             break
+
+print(f"Total time elapsed: {(time.time() - start_time)*1000} ms")
 
 n_frames = len(boundaries)
 
@@ -125,5 +142,6 @@ def update(frame):
     return line, error_line
 
 
-ani = FuncAnimation(fig, update, frames=n_frames, interval=700, repeat=False)
+ani = FuncAnimation(fig, update, frames=n_frames, interval=cfg["animation"]["interval"],
+                    repeat=cfg["animation"]["repeat"])
 plt.show()

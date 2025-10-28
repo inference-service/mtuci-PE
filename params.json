@@ -23,5 +23,9 @@
     "window": 5,
     "delta": 1.0,
     "early_stop": false
+  },
+  "animation":{
+	  "repeat": false,
+	  "interval":300
   }
 }
